@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from app.database import save_ticket
 from app.models import Ticket
@@ -39,7 +39,13 @@ def classify_support_ticket(ticket: TicketCreate):
     )
 
     # 3. Save the ticket in PostgreSQL.
-    save_ticket(db_ticket)
+    try:
+        save_ticket(db_ticket)
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save ticket",
+        )
 
     # 4. Return the classification result.
     return result
