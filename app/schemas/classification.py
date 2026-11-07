@@ -22,6 +22,13 @@ class TicketPriority(str, Enum):
     LOW = "low"
 
 
+class TicketStatus(str, Enum):
+    NEW = "new"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
 class ClassificationResult(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
