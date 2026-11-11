@@ -1,8 +1,10 @@
 # AI Support Assistant
 
-**A Telegram-based customer support triage system using FastAPI, PostgreSQL, a local LLM, and n8n.**
+🎬 **[Watch Project Demo on YouTube](https://youtu.be/jMNf9-BI0OI)**
 
-> **Project status:** Working portfolio MVP (local development). Not production-ready.
+**A Telegram-based customer support triage system built with Python, FastAPI, PostgreSQL, a local LLM, and n8n.**
+
+> **Project status:** Working portfolio MVP (learning and development). Not production-ready.
 
 ## Overview
 
