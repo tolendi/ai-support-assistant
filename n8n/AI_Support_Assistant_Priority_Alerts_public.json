@@ -1,0 +1,117 @@
+{
+  "name": "AI Support Assistant - Priority Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_OPERATOR_CHAT_ID",
+        "text": "={{ [\n  '🚨 Новая заявка высокого приоритета!',\n  '',\n  '🆔 Заявка: #' + $json.id,\n  '📂 Категория: ' + $json.category,\n  '⚡ Приоритет: ' + $json.priority,\n  '',\n  '💬 Сообщение:',\n  $json.message_text,\n  '',\n  '📌 Статус: ' + $json.status\n].join('\\n').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        -208
+      ],
+      "id": "ebacebfb-3ce5-48ee-b586-c6a90bbdc2f8",
+      "name": "Send a text message"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -784,
+        -208
+      ],
+      "id": "733052d0-e088-40e1-b558-2bebc0f2f04c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO ticket_notifications (ticket_id)\nVALUES ($1)\nON CONFLICT (ticket_id) DO NOTHING;",
+        "options": {
+          "queryReplacement": "={{ $('Get Pending Tickets').item.json.id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        -112,
+        -208
+      ],
+      "id": "9e7ed1a0-df7f-4c38-9a7b-8da462b371a9",
+      "name": "Save Notification"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    t.id,\n    t.category,\n    t.priority,\n    t.message_text,\n    t.status\nFROM tickets AS t\nWHERE t.status = 'new'\n  AND t.priority IN ('high', 'critical')\n  AND NOT EXISTS (\n      SELECT 1\n      FROM ticket_notifications AS n\n      WHERE n.ticket_id = t.id\n  )\nORDER BY t.id ASC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        -544,
+        -208
+      ],
+      "id": "18e25370-7a26-4e48-a10d-c122eb3f653f",
+      "name": "Get Pending Tickets"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Save Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Tickets": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}

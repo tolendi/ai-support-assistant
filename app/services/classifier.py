@@ -7,9 +7,10 @@ from app.services.rules import (
     determine_priority,
     requires_human_review,
 )
+from app.services.llm_classifier import classify_with_llm
 
 
-def classify_ticket(message_text: str) -> ClassificationResult:
+def classify_ticket_by_rules(message_text: str) -> ClassificationResult:
     """Classify a support ticket using simple keyword rules."""
 
     text = message_text.lower()
@@ -110,3 +111,18 @@ def classify_ticket(message_text: str) -> ClassificationResult:
         ),
         requires_human_review=human_review,
     )
+
+def classify_ticket(message_text: str) -> ClassificationResult:
+    result = classify_ticket_by_rules(message_text)
+
+    try:
+        category, priority = classify_with_llm(message_text)
+    except Exception:
+        return result
+
+    result.category = category
+    result.priority = priority
+    result.reason = "Category and priority assigned using local LLM."
+    result.requires_human_review = requires_human_review(category, priority)
+
+    return result
