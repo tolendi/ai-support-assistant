@@ -1,6 +1,9 @@
 import httpx
+import os
+import secrets
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query, Request, Header
 from app.database import save_ticket, get_ticket_by_id, get_tickets, update_ticket_status, get_ticket_status_history, update_reply_status
 from app.models import Ticket
 from app.schemas.ticket import TicketCreate
@@ -12,6 +15,13 @@ from app.services.classifier import classify_ticket
 from app.telegram_client import get_bot_info, parse_telegram_message, send_telegram_message
 from app.schemas.telegram import TelegramWebhookRequest
 from sqlalchemy.exc import IntegrityError
+
+load_dotenv()
+
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET")
+
+if not TELEGRAM_WEBHOOK_SECRET:
+    raise RuntimeError("TELEGRAM_WEBHOOK_SECRET is not set")
 
 
 app = FastAPI(
@@ -133,7 +143,18 @@ def get_ticket_history(ticket_id: int):
 
 
 @app.post("/telegram/webhook")
-async def telegram_webhook(update: TelegramWebhookRequest):
+async def telegram_webhook(
+    update: TelegramWebhookRequest,
+    x_telegram_bot_api_secret_token: str | None = Header(default=None),
+):
+    if not secrets.compare_digest(
+        x_telegram_bot_api_secret_token or "",
+        TELEGRAM_WEBHOOK_SECRET,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid Telegram webhook secret",
+        )
     message = parse_telegram_message(update.model_dump())
 
     if message is None:

@@ -1,5 +1,7 @@
 import httpx
+import os
 
+from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 from app.main import app
@@ -16,7 +18,14 @@ def test_health_endpoint():
     assert response.json() == {"status": "ok"}
 
 
-def test_classify_ticket_endpoint():
+def test_classify_ticket_endpoint(monkeypatch):
+    from app.services.classifier import classify_ticket_by_rules
+
+    monkeypatch.setattr(
+        main,
+        "classify_ticket",
+        classify_ticket_by_rules,
+    )
     response = client.post(
         "/tickets/classify",
         json={
@@ -555,6 +564,9 @@ def test_telegram_webhook_duplicate_update(monkeypatch):
 
     response = client.post(
         "/telegram/webhook",
+        headers={
+            "X-Telegram-Bot-Api-Secret-Token": main.TELEGRAM_WEBHOOK_SECRET
+        },
         json={
             "update_id": 123456,
             "message": {
@@ -595,6 +607,9 @@ def test_telegram_webhook_reply_sent(monkeypatch):
 
     response = client.post(
         "/telegram/webhook",
+            headers={
+            "X-Telegram-Bot-Api-Secret-Token": main.TELEGRAM_WEBHOOK_SECRET
+        },
         json={
             "update_id": 987654,
             "message": {
@@ -638,6 +653,9 @@ def test_telegram_webhook_reply_failed(monkeypatch):
 
     response = client.post(
         "/telegram/webhook",
+        headers={
+            "X-Telegram-Bot-Api-Secret-Token": main.TELEGRAM_WEBHOOK_SECRET
+        },
         json={
             "update_id": 987655,
             "message": {
@@ -651,3 +669,56 @@ def test_telegram_webhook_reply_failed(monkeypatch):
 
     assert response.status_code == 200
     assert statuses == [(123, "failed")]
+
+
+def test_telegram_webhook_without_secret():
+    response = client.post(
+        "/telegram/webhook",
+        json={
+            "update_id": 123456,
+            "message": {
+                "message_id": 100,
+                "from": {"id": 789},
+                "chat": {"id": 789},
+                "text": "I was charged twice",
+            },
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Invalid Telegram webhook secret"
+
+def test_telegram_webhook_with_valid_secret(monkeypatch):
+    from app import main
+
+    monkeypatch.setattr(main, "parse_telegram_message", lambda update: None)
+
+    response = client.post(
+        "/telegram/webhook",
+        headers={
+            "X-Telegram-Bot-Api-Secret-Token": main.TELEGRAM_WEBHOOK_SECRET
+        },
+        json={
+            "update_id": 123457
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "ok": True,
+        "message": "Update ignored"
+    }
+
+def test_telegram_webhook_with_invalid_secret():
+    response = client.post(
+        "/telegram/webhook",
+        headers={
+            "X-Telegram-Bot-Api-Secret-Token": "incorrect_secret"
+        },
+        json={
+            "update_id": 123458
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Invalid Telegram webhook secret"
