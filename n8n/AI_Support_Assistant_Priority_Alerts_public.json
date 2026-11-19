@@ -3,8 +3,31 @@
   "nodes": [
     {
       "parameters": {
-        "chatId": "REPLACE_WITH_OPERATOR_CHAT_ID",
-        "text": "={{ [\n  '🚨 Новая заявка высокого приоритета!',\n  '',\n  '🆔 Заявка: #' + $json.id,\n  '📂 Категория: ' + $json.category,\n  '⚡ Приоритет: ' + $json.priority,\n  '',\n  '💬 Сообщение:',\n  $json.message_text,\n  '',\n  '📌 Статус: ' + $json.status\n].join('\\n').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "chatId": "224897531",
+        "text": "=📩 Новая заявка #{{ $json.id }}\n\n📂 Категория: {{ $json.category }}\n⚡ Приоритет: {{ $json.priority }}\n\n💬 Сообщение клиента:\n{{ $json.message_text }}\n\n📝 Предлагаемый ответ:\n{{ $json.draft_reply }}\n\n📌 Статус: {{ $json.review_status }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Одобрить",
+                    "additionalFields": {
+                      "callback_data": "={{ 'approve:' + $json.id }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Отклонить",
+                    "additionalFields": {
+                      "callback_data": "={{ 'reject:' + $json.id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "additionalFields": {
           "appendAttribution": false,
           "parse_mode": "HTML"
@@ -17,7 +40,14 @@
         -208
       ],
       "id": "ebacebfb-3ce5-48ee-b586-c6a90bbdc2f8",
-      "name": "Send a text message"
+      "name": "Send a text message",
+      "webhookId": "c14033b4-dd4d-4c20-b51f-8cfe968b73ae",
+      "credentials": {
+        "telegramApi": {
+          "id": "pvswqAXCTjLvArap",
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
@@ -53,12 +83,18 @@
         -208
       ],
       "id": "9e7ed1a0-df7f-4c38-9a7b-8da462b371a9",
-      "name": "Save Notification"
+      "name": "Save Notification",
+      "credentials": {
+        "postgres": {
+          "id": "rxUoOhUn4ZYCfkP3",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n    t.id,\n    t.category,\n    t.priority,\n    t.message_text,\n    t.status\nFROM tickets AS t\nWHERE t.status = 'new'\n  AND t.priority IN ('high', 'critical')\n  AND NOT EXISTS (\n      SELECT 1\n      FROM ticket_notifications AS n\n      WHERE n.ticket_id = t.id\n  )\nORDER BY t.id ASC;",
+        "query": "SELECT\n    t.id,\n    t.category,\n    t.priority,\n    t.message_text,\n    t.draft_reply,\n    t.status,\n    t.review_status,\n    t.created_at\nFROM tickets AS t\nWHERE t.review_status = 'pending_review'\n    AND t.status = 'new'\n    AND t.chat_id IS NOT NULL\n    AND NOT EXISTS (\n        SELECT 1\n        FROM ticket_notifications AS n\n        WHERE n.ticket_id = t.id\n    )\nORDER BY t.created_at ASC;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -68,7 +104,13 @@
         -208
       ],
       "id": "18e25370-7a26-4e48-a10d-c122eb3f653f",
-      "name": "Get Pending Tickets"
+      "name": "Get Pending Tickets",
+      "credentials": {
+        "postgres": {
+          "id": "rxUoOhUn4ZYCfkP3",
+          "name": "Postgres account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -107,11 +149,17 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
+  "versionId": "230daf2c-3b87-4fd9-9946-8ae6773be6e3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4facdf888c273c602d4268eee282acffca5e9f974b49d591f5d93d768edf01e1"
+  },
   "nodeGroups": [],
+  "id": "GPgzYDRJ8JKVX5OU",
   "tags": []
 }

@@ -32,8 +32,32 @@ class Ticket(Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     draft_reply: Mapped[str] = mapped_column(Text, nullable=False)
     reply_status: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'pending'"))
-    requires_human_review: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default=text("TRUE")
+    requires_human_review: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
+    chat_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    review_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'pending_review'"),
+    )
+    approved_reply: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )
+
+    reviewed_by: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+
+    reviewed_at: Mapped[object | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    approved_reply_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'pending'"),
+    )
+    approved_reply_sent_at: Mapped[object | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
     )
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'new'")

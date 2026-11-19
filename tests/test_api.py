@@ -1,5 +1,6 @@
 import httpx
 import os
+import pytest
 
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
@@ -9,6 +10,23 @@ from app import main
 
 
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def operator_auth_headers(request):
+    protected_tests = (
+        "test_classify_ticket",
+        "test_get_ticket",
+        "test_update_ticket_status",
+    )
+
+    if request.node.name.startswith(protected_tests):
+        client.headers.update({
+            "X-Operator-API-Key": main.OPERATOR_API_KEY
+        })
+
+    yield
+
+    client.headers.pop("X-Operator-API-Key", None)
 
 
 def test_health_endpoint():
@@ -722,3 +740,234 @@ def test_telegram_webhook_with_invalid_secret():
 
     assert response.status_code == 403
     assert response.json()["detail"] == "Invalid Telegram webhook secret"
+
+def test_approve_ticket_without_api_key():
+    response = client.post(
+        "/tickets/1/approve",
+        json={"approved_reply": "Test reply"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Invalid operator API key"
+
+def test_approve_ticket_with_invalid_api_key():
+    response = client.post(
+        "/tickets/1/approve",
+        headers={
+            "X-Operator-API-Key": "incorrect_key"
+        },
+        json={"approved_reply": "Test reply"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Invalid operator API key"
+
+def test_approve_ticket_success(monkeypatch):
+    from types import SimpleNamespace
+    from datetime import datetime, timezone
+
+    ticket = SimpleNamespace(
+        id=1,
+        review_status="approved",
+        approved_reply="Test reply",
+        reviewed_by=main.OPERATOR_ID,
+        reviewed_at=datetime.now(timezone.utc),
+    )
+
+    monkeypatch.setattr(
+        main,
+        "approve_ticket_reply",
+        lambda **kwargs: ticket,
+    )
+
+    response = client.post(
+        "/tickets/1/approve",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY
+        },
+        json={"approved_reply": "Test reply"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["review_status"] == "approved"
+    assert response.json()["approved_reply"] == "Test reply"
+
+def test_approve_ticket_not_found(monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "approve_ticket_reply",
+        lambda **kwargs: None,
+    )
+
+    response = client.post(
+        "/tickets/999/approve",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY
+        },
+        json={"approved_reply": "Test reply"},
+    )
+
+    assert response.status_code == 404
+
+def test_approve_ticket_already_approved(monkeypatch):
+    def mock_approve(**kwargs):
+        raise ValueError("Ticket is not pending review")
+
+    monkeypatch.setattr(
+        main,
+        "approve_ticket_reply",
+        mock_approve,
+    )
+
+    response = client.post(
+        "/tickets/1/approve",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY
+        },
+        json={"approved_reply": "Another reply"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Ticket is not pending review"
+
+def test_send_ticket_reply_without_api_key():
+    response = client.post("/tickets/1/send-reply")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Invalid operator API key"
+
+def test_send_ticket_reply_invalid_api_key():
+    response = client.post(
+        "/tickets/1/send-reply",
+        headers={
+            "X-Operator-API-Key": "incorrect_key",
+        },
+    )
+
+    assert response.status_code == 403
+
+def test_send_ticket_reply_success(monkeypatch):
+    from types import SimpleNamespace
+    from datetime import datetime, timezone
+
+    ticket = SimpleNamespace(
+        id=1,
+        review_status="approved",
+        approved_reply_status="sent",
+        approved_reply_sent_at=datetime.now(timezone.utc),
+    )
+
+    monkeypatch.setattr(
+        main,
+        "send_approved_reply",
+        lambda ticket_id: ticket,
+    )
+
+    response = client.post(
+        "/tickets/1/send-reply",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["approved_reply_status"] == "sent"
+    assert response.json()["approved_reply_sent_at"] is not None
+
+def test_send_ticket_reply_not_found(monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "send_approved_reply",
+        lambda ticket_id: None,
+    )
+
+    response = client.post(
+        "/tickets/999/send-reply",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY,
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Ticket not found"
+
+def test_send_ticket_reply_already_sent(monkeypatch):
+    def mock_send(ticket_id):
+        raise ValueError("Reply is not pending delivery")
+
+    monkeypatch.setattr(
+        main,
+        "send_approved_reply",
+        mock_send,
+    )
+
+    response = client.post(
+        "/tickets/1/send-reply",
+        headers={
+            "X-Operator-API-Key": main.OPERATOR_API_KEY,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Reply is not pending delivery"
+
+def test_callback_unauthorized_operator(monkeypatch):
+    monkeypatch.setattr(main, "OPERATOR_TELEGRAM_ID", 100)
+
+    monkeypatch.setattr(
+        main, "answer_callback_query", lambda *args: None
+    )
+
+    result = main.handle_operator_callback({
+        "id": "test_callback",
+        "from": {"id": 999},
+        "data": "approve:1",
+    })
+
+    assert result["message"] == "Доступ запрещён"
+
+def test_callback_approve(monkeypatch):
+    from types import SimpleNamespace
+
+    ticket = SimpleNamespace(
+        id=1,
+        chat_id=123456,
+        draft_reply="Test reply",
+        approved_reply_status="sent",
+    )
+
+    monkeypatch.setattr(main, "OPERATOR_TELEGRAM_ID", 100)
+    monkeypatch.setattr(main, "get_ticket_by_id", lambda x: ticket)
+    monkeypatch.setattr(main, "approve_ticket_reply", lambda **kw: ticket)
+    monkeypatch.setattr(main, "send_approved_reply", lambda x: ticket)
+    monkeypatch.setattr(main, "answer_callback_query", lambda *args: None)
+
+    result = main.handle_operator_callback({
+        "id": "test_callback",
+        "from": {"id": 100},
+        "data": "approve:1",
+    })
+
+    assert result["message"] == "Ответ одобрен и отправлен клиенту"
+
+def test_callback_reject(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    ticket = SimpleNamespace(id=1)
+    send_mock = MagicMock()
+
+    monkeypatch.setattr(main, "OPERATOR_TELEGRAM_ID", 100)
+    monkeypatch.setattr(main, "get_ticket_by_id", lambda x: ticket)
+    monkeypatch.setattr(main, "reject_ticket_reply", lambda **kw: ticket)
+    monkeypatch.setattr(main, "send_approved_reply", send_mock)
+    monkeypatch.setattr(main, "answer_callback_query", lambda *args: None)
+
+    result = main.handle_operator_callback({
+        "id": "test_callback",
+        "from": {"id": 100},
+        "data": "reject:1",
+    })
+
+    assert result["message"] == "Ответ отклонён"
+    send_mock.assert_not_called()

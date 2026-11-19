@@ -72,3 +72,21 @@ def send_telegram_message(chat_id: int, text: str):
     except httpx.HTTPStatusError as error:
         print(f"Telegram API error: {error}")
         raise
+
+def answer_callback_query(
+    callback_query_id: str,
+    text: str,
+):
+    response = httpx.post(
+        f"{TELEGRAM_API_URL}/answerCallbackQuery",
+        json={
+            "callback_query_id": callback_query_id,
+            "text": text,
+            "show_alert": True,
+        },
+        timeout=10,
+    )
+
+    response.raise_for_status()
+
+    return response.json()

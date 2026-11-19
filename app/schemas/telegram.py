@@ -6,3 +6,4 @@ class TelegramWebhookRequest(BaseModel):
 
     update_id: int
     message: dict | None = None
+    callback_query: dict | None = None

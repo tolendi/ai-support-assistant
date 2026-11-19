@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -129,3 +130,112 @@ def get_ticket_status_history(ticket_id: int):
             .order_by(TicketStatusHistory.changed_at.asc())
             .all()
         )
+
+def approve_ticket_reply(
+    ticket_id: int,
+    operator_id: int,
+    approved_reply: str,
+):
+    with SessionLocal() as session:
+        ticket = session.get(
+            Ticket, ticket_id, with_for_update=True
+        )
+
+        if ticket is None:
+            return None
+
+        if ticket.review_status != "pending_review":
+            raise ValueError("Ticket is not pending review")
+
+        if not approved_reply.strip():
+            raise ValueError("Approved reply cannot be empty")
+
+        ticket.review_status = "approved"
+        ticket.approved_reply = approved_reply.strip()
+        ticket.reviewed_by = operator_id
+        ticket.reviewed_at = datetime.now(timezone.utc)
+
+        session.commit()
+        session.refresh(ticket)
+
+        return ticket
+
+def prepare_approved_reply(ticket_id: int):
+    with SessionLocal() as session:
+        ticket = session.get(
+            Ticket, ticket_id, with_for_update=True
+        )
+
+        if ticket is None:
+            return None
+
+        if ticket.review_status != "approved":
+            raise ValueError("Reply is not approved")
+
+        if ticket.chat_id is None:
+            raise ValueError("Ticket has no chat_id")
+
+        if not ticket.approved_reply or not ticket.approved_reply.strip():
+            raise ValueError("Approved reply is empty")
+
+        if ticket.approved_reply_status != "pending":
+            raise ValueError("Reply is not pending delivery")
+
+        ticket.approved_reply_status = "sending"
+
+        session.commit()
+        session.refresh(ticket)
+
+        return ticket
+
+def finish_approved_reply(
+    ticket_id: int,
+    delivery_status: str,
+):
+    if delivery_status not in ("sent", "failed", "unknown"):
+        raise ValueError("Invalid delivery status")
+
+    with SessionLocal() as session:
+        ticket = session.get(
+            Ticket, ticket_id, with_for_update=True
+        )
+
+        if ticket is None:
+            return None
+
+        if ticket.approved_reply_status != "sending":
+            raise ValueError("Reply is not being sent")
+
+        ticket.approved_reply_status = delivery_status
+
+        if delivery_status == "sent":
+            ticket.approved_reply_sent_at = datetime.now(timezone.utc)
+
+        session.commit()
+        session.refresh(ticket)
+
+        return ticket
+
+def reject_ticket_reply(
+    ticket_id: int,
+    operator_id: int,
+):
+    with SessionLocal() as session:
+        ticket = session.get(
+            Ticket, ticket_id, with_for_update=True
+        )
+
+        if ticket is None:
+            return None
+
+        if ticket.review_status != "pending_review":
+            raise ValueError("Ticket is not pending review")
+
+        ticket.review_status = "rejected"
+        ticket.reviewed_by = operator_id
+        ticket.reviewed_at = datetime.now(timezone.utc)
+
+        session.commit()
+        session.refresh(ticket)
+
+        return ticket
