@@ -2,6 +2,28 @@
 from app.schemas.classification import TicketCategory, TicketPriority
 
 
+DOUBLE_CHARGE_KEYWORDS = (
+    "charged twice",
+    "double charge",
+    "double billing",
+    "списали дважды",
+    "дважды списали",
+    "двойное списание",
+    "два раза списали",
+    "списали два раза",
+    "ақша екі рет алынды",
+    "екі рет ақша алынды",
+)
+
+
+PRIORITY_RANK = {
+    TicketPriority.LOW: 0,
+    TicketPriority.MEDIUM: 1,
+    TicketPriority.HIGH: 2,
+    TicketPriority.CRITICAL: 3,
+}
+
+
 def determine_priority(
     category: TicketCategory,
     message_text: str,
@@ -18,14 +40,11 @@ def determine_priority(
     ]
 
     high_keywords = [
-        "charged twice",
-        "double charge",
+        *DOUBLE_CHARGE_KEYWORDS,
         "payment failed",
         "cannot access my account",
         "can't access my account",
         "несанкционирован",
-        "списали дважды",
-        "двойное списание",
         "взломали аккаунт",
         "не могу войти",
     ]
@@ -63,3 +82,16 @@ def requires_human_review(
         return True
 
     return False
+
+
+def resolve_priority(
+    rule_priority: TicketPriority,
+    llm_priority: TicketPriority,
+) -> TicketPriority:
+    """Prevent LLM from lowering rule-based priority."""
+
+    return max(
+        rule_priority,
+        llm_priority,
+        key=lambda priority: PRIORITY_RANK[priority],
+    )

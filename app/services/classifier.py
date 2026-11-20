@@ -1,4 +1,6 @@
-
+from app.schemas.classification import TicketPriority
+from app.services.missing_information import detect_missing_information
+from app.services.reply_generator import generate_reply
 from app.schemas.classification import (
     ClassificationResult,
     TicketCategory,
@@ -8,6 +10,13 @@ from app.services.rules import (
     requires_human_review,
 )
 from app.services.llm_classifier import classify_with_llm
+from app.services.rules import (
+    DOUBLE_CHARGE_KEYWORDS,
+    determine_priority,
+    requires_human_review,
+    resolve_priority,
+)
+
 
 
 def classify_ticket_by_rules(message_text: str) -> ClassificationResult:
@@ -16,13 +25,10 @@ def classify_ticket_by_rules(message_text: str) -> ClassificationResult:
     text = message_text.lower()
 
     if any(word in text for word in [
+        *DOUBLE_CHARGE_KEYWORDS,
         "fraud",
         "unauthorized payment",
-        "charged twice",
-        "double charge",
         "payment failed",
-        "списали дважды",
-        "двойное списание",
         "несанкционирован",
     ]):
         category = TicketCategory.PAYMENT_ISSUE
@@ -112,17 +118,49 @@ def classify_ticket_by_rules(message_text: str) -> ClassificationResult:
         requires_human_review=human_review,
     )
 
+PRIORITY_RANK = {
+    TicketPriority.LOW: 0,
+    TicketPriority.MEDIUM: 1,
+    TicketPriority.HIGH: 2,
+    TicketPriority.CRITICAL: 3,
+}
+
 def classify_ticket(message_text: str) -> ClassificationResult:
     result = classify_ticket_by_rules(message_text)
 
     try:
         category, priority = classify_with_llm(message_text)
-    except Exception:
-        return result
 
-    result.category = category
-    result.priority = priority
-    result.reason = "Category and priority assigned using local LLM."
-    result.requires_human_review = requires_human_review(category, priority)
+    except Exception:
+        pass
+
+    else:
+        result.category = category
+
+        rule_priority = determine_priority(
+            category,
+            message_text,
+        )
+        result.priority = resolve_priority(
+            resolve_priority(result.priority, rule_priority),
+            priority,
+        )
+        
+        result.reason = (
+            "Category and priority assigned using local LLM."
+        )
+
+    result.missing_information = detect_missing_information(
+        message_text=message_text,
+        category=result.category,
+    )
+
+    result.draft_reply = generate_reply(
+        message_text=message_text,
+        category=result.category,
+        priority=result.priority,
+    )
+
+    result.requires_human_review = True
 
     return result
