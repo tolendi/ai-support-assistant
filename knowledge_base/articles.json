@@ -1,0 +1,27 @@
+
+[
+  {
+    "id": 1,
+    "title": "Payment problems",
+    "category": "payment_issue",
+    "content": "If a customer reports a failed payment or duplicate charge, collect the order number, payment date, and payment amount. Never request full card details, CVV, or passwords. A human specialist must review the payment issue.",
+    "keywords": ["payment", "charged", "double charge", "оплата", "списание", "дважды"],
+    "updated_at": "2026-11-22"
+  },
+  {
+    "id": 2,
+    "title": "Delivery problems",
+    "category": "delivery_issue",
+    "content": "For delivery delays, collect the order number and a description of the problem. Do not promise a delivery date without verified information. A human specialist must review the request.",
+    "keywords": ["delivery", "shipping", "tracking", "доставка", "задержка", "курьер"],
+    "updated_at": "2026-11-22"
+  },
+  {
+    "id": 3,
+    "title": "Returns and refunds",
+    "category": "return_refund",
+    "content": "For a return or refund request, collect the order number and reason for the return. Do not promise refund approval or processing times without verified information. A human specialist must review the request.",
+    "keywords": ["refund", "return", "возврат", "вернуть деньги", "вернуть товар"],
+    "updated_at": "2026-11-22"
+  }
+]

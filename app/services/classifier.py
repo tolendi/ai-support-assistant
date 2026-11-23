@@ -1,6 +1,7 @@
 from app.schemas.classification import TicketPriority
 from app.services.missing_information import detect_missing_information
 from app.services.reply_generator import generate_reply
+from app.services.knowledge_base import retrieve_articles
 from app.schemas.classification import (
     ClassificationResult,
     TicketCategory,
@@ -155,10 +156,21 @@ def classify_ticket(message_text: str) -> ClassificationResult:
         category=result.category,
     )
 
+    articles = retrieve_articles(
+        message_text=message_text,
+        category=result.category.value,
+    )
+
+    result.knowledge_article_ids = [
+        article["id"]
+        for article in articles
+    ]
+
     result.draft_reply = generate_reply(
         message_text=message_text,
         category=result.category,
         priority=result.priority,
+        articles=articles,
     )
 
     result.requires_human_review = True

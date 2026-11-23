@@ -75,3 +75,4 @@ def test_double_charge_rules(message):
 
     assert result.category == TicketCategory.PAYMENT_ISSUE
     assert result.priority == TicketPriority.HIGH
+

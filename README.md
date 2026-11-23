@@ -34,6 +34,11 @@ The project demonstrates AI integration, Python backend development, SQL persist
 - **Multilingual fallback:** use predefined localized replies when LLM generation fails.
 - **Missing information detection:** identify missing ticket details using category-specific rules and regular expressions.
 - **Priority guardrail:** prevent the LLM from lowering rule-based ticket priorities.
+- **Knowledge-base retrieval (RAG):** retrieve relevant support articles from a JSON knowledge base using keyword matching and category-based ranking.
+- **Grounded reply generation:** provide retrieved article content to Qwen3 when generating customer support drafts.
+- **Knowledge-aware fallback:** use safe predefined replies when no relevant knowledge articles are found.
+- **Reply safety guardrails:** detect selected requests for sensitive credentials and replace flagged replies with safe fallbacks.
+
 
 ## Tech Stack
 
@@ -274,7 +279,12 @@ python -m scripts.demo_reply_generation
 ## Security and Known Limitations
 
 - The project is a **portfolio MVP**, not a production support platform.
-- LLM-generated replies are not yet grounded in a corporate knowledge base (RAG).
+- RAG uses keyword-based retrieval from a small local JSON knowledge base. Semantic search, embeddings, and vector databases are not implemented.
+- Retrieved articles provide context but do not guarantee factual correctness. LLM-generated replies may still contain hallucinations.
+- When no relevant article is found, the reply generator uses a predefined fallback. This conservative behavior may reduce answer specificity.
+- Reply safety guardrails use limited pattern matching. They may produce false positives or miss unsafe requests, especially with complex negations or unsupported languages.
+- Prompt injection resistance has only been tested in limited scenarios and is not guaranteed.
+- Human approval remains mandatory before sending generated support replies.
 - Kazakh reply generation quality requires further improvement.
 - Independent language detection and fallback replies currently support Russian, English, and Kazakh only.
 - LLM endpoint and model configuration are currently hardcoded.
@@ -309,7 +319,7 @@ python -m scripts.demo_reply_generation
 - [x] Detect missing ticket information
 - [x] Implement rule-based priority guardrails
 - [x] Verify AI reply generation end-to-end
-- [ ] Add knowledge-base retrieval and grounded answers (RAG)
+- [x] Add knowledge-base retrieval and grounded answers (RAG)
 - [ ] Evaluate classification and answer quality on a labeled dataset
 - [ ] Externalize LLM configuration through environment variables
 - [ ] Implement reproducible database initialization
@@ -330,6 +340,7 @@ docs/             Project requirements and architecture notes
 .env.example      Environment configuration template
 README.md         Project overview and setup
 requirements.txt  Python dependencies
+knowledge_base/   JSON support articles for retrieval
 ```
 
 ## Author

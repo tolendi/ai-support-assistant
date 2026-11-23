@@ -173,3 +173,27 @@ def test_generate_llm_reply_success(monkeypatch):
     )
 
     assert result == expected_reply
+
+
+def test_no_knowledge_articles_uses_safe_fallback(monkeypatch):
+    def forbidden_llm_call(**kwargs):
+        raise AssertionError(
+            "LLM must not be called without knowledge articles"
+        )
+
+    monkeypatch.setattr(
+        reply_generator,
+        "generate_llm_reply",
+        forbidden_llm_call,
+    )
+
+    result = reply_generator.generate_reply(
+        message_text="Какие у вас часы работы?",
+        category=TicketCategory.OTHER,
+        priority=TicketPriority.LOW,
+        articles=[],
+    )
+
+    assert result == get_fallback_reply("ru")
+    assert "9:00" not in result
+    assert "Московскому" not in result
