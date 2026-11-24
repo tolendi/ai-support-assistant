@@ -1,0 +1,21 @@
+﻿id,message,expected_category,predicted_category,correct,error,expected_priority,predicted_priority,priority_correct
+1,I was charged twice,payment_issue,payment_issue,True,,high,high,True
+2,My payment failed,payment_issue,payment_issue,True,,medium,high,False
+3,С карты дважды списали деньги,payment_issue,payment_issue,True,,high,high,True
+4,Where is my order?,order_status,order_status,True,,low,medium,False
+5,Хочу узнать статус заказа,order_status,order_status,True,,low,low,True
+6,My delivery is delayed,delivery_issue,delivery_issue,True,,medium,medium,True
+7,Моя доставка задерживается,delivery_issue,delivery_issue,True,,medium,medium,True
+8,The courier never arrived,delivery_issue,delivery_issue,True,,medium,medium,True
+9,I want a refund,return_refund,return_refund,True,,medium,medium,True
+10,Хочу вернуть товар,return_refund,return_refund,True,,medium,low,False
+11,I cannot log in to my account,account_access,account_access,True,,medium,medium,True
+12,Не могу войти в аккаунт,account_access,account_access,True,,medium,high,False
+13,What sizes are available?,product_question,product_question,True,,low,low,True
+14,Сколько стоит этот товар?,product_question,product_question,True,,low,low,True
+15,I want to file a complaint,complaint,complaint,True,,medium,medium,True
+16,Ужасное обслуживание,complaint,complaint,True,,medium,high,False
+17,Hello!,other,other,True,,low,low,True
+18,Какие у вас часы работы?,other,other,True,,low,low,True
+19,Thank you for your help,other,other,True,,low,low,True
+20,Сәлеметсіз бе?,other,other,True,,low,low,True

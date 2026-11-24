@@ -1,7 +1,7 @@
 
 import httpx
 import logging
-
+import os
 from app.services.missing_information import detect_missing_information
 from app.services.language_detector import detect_language
 from app.services.reply_templates import get_fallback_reply
@@ -10,6 +10,25 @@ from app.schemas.classification import (
     TicketPriority,
 )
 from app.services.reply_guardrails import contains_sensitive_data_request
+from dotenv import load_dotenv
+
+LLM_BASE_URL = os.getenv(
+    "LLM_BASE_URL",
+    "http://localhost:1235/v1",
+)
+
+LLM_REPLY_MODEL = os.getenv(
+    "LLM_REPLY_MODEL",
+    "qwen3-4b",
+)
+
+LLM_REPLY_TEMPERATURE = float(
+    os.getenv("LLM_REPLY_TEMPERATURE", "0.1")
+)
+
+LLM_REPLY_MAX_TOKENS = int(
+    os.getenv("LLM_REPLY_MAX_TOKENS", "300")
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +61,9 @@ def generate_llm_reply(
 
 
     response = httpx.post(
-        "http://localhost:1235/v1/chat/completions",
+        f"{LLM_BASE_URL.rstrip('/')}/chat/completions",
         json={
-            "model": "qwen3-4b",
+            "model": LLM_REPLY_MODEL,
             "messages": [
                 {
                     "role": "system",
@@ -92,8 +111,8 @@ def generate_llm_reply(
                     ),
                 },
             ],
-            "temperature": 0.1,
-            "max_tokens": 300,
+            "temperature": LLM_REPLY_TEMPERATURE,
+            "max_tokens": LLM_REPLY_MAX_TOKENS,
         },
         timeout=30,
     )
