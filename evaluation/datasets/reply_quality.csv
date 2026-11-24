@@ -1,0 +1,11 @@
+id,message,expected_article_id,expected_language
+1,I was charged twice,1,en
+2,My payment failed,1,en
+3,С карты дважды списали деньги,1,ru
+4,My delivery is delayed,2,en
+5,Моя доставка задерживается,2,ru
+6,I want a refund,3,en
+7,Хочу вернуть товар,3,ru
+8,Какие у вас часы работы?,,ru
+9,How much does delivery cost?,2,en
+10,Сколько дней занимает доставка?,2,ru

@@ -1,0 +1,11 @@
+﻿id,message,expected_article_id,expected_language,predicted_category,predicted_priority,retrieved_article_ids,generated_reply,groundedness,language,safety,relevance,error
+1,I was charged twice,1,en,payment_issue,high,1,"I understand you were charged twice. Could you please provide the order number, payment date, and payment amount so that we can investigate this further?",1,1,1,1,
+2,My payment failed,1,en,payment_issue,high,1,"I need the order number, payment date, and payment amount to assist you with the payment issue. Please provide this information.",1,1,1,1,
+3,С карты дважды списали деньги,1,ru,payment_issue,high,1,"Мы получили вашу информацию. Пожалуйста, укажите номер заказа, дату платежа и сумму платежа, чтобы мы могли проверить ваш случай.",1,1,1,1,
+4,My delivery is delayed,2,en,delivery_issue,medium,2,Thank you for providing the information. A human specialist will review your request. Please provide your order ID and tracking number so we can assist you further.,0,1,1,1,
+5,Моя доставка задерживается,2,ru,delivery_issue,medium,2,"Для уточнения проблемы с доставкой необходимы данные о заказе и номер трекинга. Пожалуйста, предоставьте эту информацию.",1,1,1,1,
+6,I want a refund,3,en,return_refund,low,3,I need your order number and reason for the return to process your refund. Please provide these details so I can assist you further.,0,1,1,1,
+7,Хочу вернуть товар,3,ru,return_refund,low,3,"Для обработки вашего запроса на возврат товара необходимы данные о заказе и причине возврата. Пожалуйста, уточните порядковый номер заказа и причины возврата.",1,1,1,1,
+8,Какие у вас часы работы?,,ru,other,low,,Здравствуйте! Спасибо за ваше обращение. Наш специалист рассмотрит ваш вопрос.,1,1,1,0,
+9,How much does delivery cost?,2,en,delivery_issue,low,2,"Thank you for your question. To assist you better, could you please provide the order ID and tracking number? A human specialist will review your request.",1,1,1,0,
+10,Сколько дней занимает доставка?,2,ru,delivery_issue,low,2,"Для уточнения сроков доставки необходимы данные о вашем заказе (номер заказа и номер отслеживания). Пожалуйста, предоставьте эту информацию.",1,1,1,1,
