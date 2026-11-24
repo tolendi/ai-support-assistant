@@ -1,0 +1,21 @@
+id,message,expected_category,expected_priority
+1,I was charged twice,payment_issue,high
+2,My payment failed,payment_issue,medium
+3,С карты дважды списали деньги,payment_issue,high
+4,Where is my order?,order_status,low
+5,Хочу узнать статус заказа,order_status,low
+6,My delivery is delayed,delivery_issue,medium
+7,Моя доставка задерживается,delivery_issue,medium
+8,The courier never arrived,delivery_issue,medium
+9,I want a refund,return_refund,medium
+10,Хочу вернуть товар,return_refund,medium
+11,I cannot log in to my account,account_access,medium
+12,Не могу войти в аккаунт,account_access,medium
+13,What sizes are available?,product_question,low
+14,Сколько стоит этот товар?,product_question,low
+15,I want to file a complaint,complaint,medium
+16,Ужасное обслуживание,complaint,medium
+17,Hello!,other,low
+18,Какие у вас часы работы?,other,low
+19,Thank you for your help,other,low
+20,Сәлеметсіз бе?,other,low

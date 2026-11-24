@@ -276,6 +276,47 @@ Run AI reply generation:
 python -m scripts.demo_reply_generation
 ```
 
+## AI Evaluation
+
+The classification pipeline was evaluated on a labeled dataset of 20 customer support messages in English, Russian, and Kazakh.
+
+### Baseline Results
+
+| Metric | Result |
+|---|---:|
+| Category Accuracy | 100% (20/20) |
+| Priority Accuracy | 75% (15/20) |
+| Macro Precision (categories) | 1.0000 |
+| Macro Recall (categories) | 1.0000 |
+| Macro F1-score (categories) | 1.0000 |
+| Evaluated Categories | 8 |
+
+All 20 category predictions matched the expected labels. Five priority predictions differed from the manually assigned reference labels.
+
+### Reproduce the Evaluation
+
+Run from the project root:
+
+```bash
+python -m evaluation.evaluate_classification
+```
+
+Files:
+
+- `evaluation/datasets/classification.csv` — labeled evaluation dataset.
+- `evaluation/evaluate_classification.py` — evaluation script.
+- `evaluation/classification_results.csv` — saved predictions and comparison results.
+
+### Limitations
+
+- The dataset contains only 20 relatively simple examples and is not representative of production traffic.
+- Priority reference labels are provisional and have not been validated against a formal SLA policy.
+- Results evaluate the application classification pipeline, including its fallback behavior, rather than isolated LLM performance.
+- Answer quality, hallucination rate, and multilingual response quality have not been quantitatively evaluated.
+- Results may vary between runs depending on the local LLM configuration and availability.
+
+These metrics represent an initial portfolio baseline, not production-level quality assurance.
+
 ## Security and Known Limitations
 
 - The project is a **portfolio MVP**, not a production support platform.
@@ -320,7 +361,8 @@ python -m scripts.demo_reply_generation
 - [x] Implement rule-based priority guardrails
 - [x] Verify AI reply generation end-to-end
 - [x] Add knowledge-base retrieval and grounded answers (RAG)
-- [ ] Evaluate classification and answer quality on a labeled dataset
+- [x] Evaluate classification accuracy and priority accuracy on a labeled dataset
+- [ ] Evaluate generated answer quality on a labeled dataset
 - [ ] Externalize LLM configuration through environment variables
 - [ ] Implement reproducible database initialization
 - [ ] Add CI pipeline for automated testing
