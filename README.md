@@ -18,10 +18,10 @@
 - Классификация заявок, проверка приоритетов и поиск недостающей информации.
 - Генерация черновиков на русском, английском и казахском; проверка языка и fallback-ответы.
 - **RAG:** поиск статей по ключевым словам в локальном JSON и передача контекста в Qwen3.
-- PostgreSQL: заявки, статусы, история, решения оператора и результаты доставки.
+- PostgreSQL: заявки, статусы, история, решения оператора, результаты доставки и метаданные классификации (`knowledge_article_ids`, `missing_information`), доступные через REST API.
 - n8n: уведомления оператора; одобрение/отклонение в Telegram, редактирование через REST API.
 - Защита webhook, API-ключ оператора, базовые фильтры опасных запросов в ответах.
-- **166 пройденных тестов** в последнем сообщённом локальном запуске.
+- **166 пройденных тестов** в последнем локальном запуске.
 
 ### Технологии
 
@@ -47,7 +47,7 @@
 
 ### Локальный запуск
 
-1. Установить Python, PostgreSQL, n8n и локальный сервер LLM (например, LM Studio). Для входящих Telegram webhook использовать публичный HTTPS-адрес, например через ngrok.
+1. Установить Python, PostgreSQL, n8n и локальный сервер LLM (например, Bionic или LM Studio). Для входящих Telegram webhook использовать публичный HTTPS-адрес, например через ngrok.
 2. Создать окружение и установить зависимости:
 
    ```bash
@@ -56,7 +56,12 @@
    python -m pip install -r requirements.txt
    ```
 
-3. Создать базу PostgreSQL и необходимые исходные таблицы; применить [`sql/001_human_in_the_loop.sql`](sql/001_human_in_the_loop.sql). **Важно:** скрипт обновляет существующую схему и пока не создаёт базу с нуля.
+3. Создать пустую базу PostgreSQL `ai_support_assistant` и выполнить в ней SQL-скрипты по порядку:
+   - [`000_initial_schema.sql`](sql/000_initial_schema.sql) — создание таблиц, ограничений и индексов.
+   - [`001_human_in_the_loop.sql`](sql/001_human_in_the_loop.sql) — совместимость с механизмом согласования ответов.
+   - [`002_classification_metadata.sql`](sql/002_classification_metadata.sql) — добавление метаданных классификации.
+
+   Для существующей базы с уже применённой миграцией `001` достаточно выполнить `002`. У старых заявок новые поля содержат пустые списки (исторические метаданные не восстанавливаются).
 4. Скопировать `.env.example` в `.env`, указать параметры БД, Telegram, оператора и LLM. Не публиковать `.env` и токены. Для текущего варианта используются `LLM_CLASSIFIER_MODEL=qwen3-4b` и `LLM_REPLY_MODEL=qwen3-4b`.
 5. Запустить API:
 
@@ -78,7 +83,7 @@ python -m evaluation.evaluate_replies
 
 | Метрика | Результат |
 | --- | ---: |
-| Тесты | 166 passed (последний сообщённый запуск) |
+| Тесты | 166 passed (последний локальный запуск) |
 | Категории, 20 обращений | 100% в обоих прогонах |
 | Приоритеты, 20 обращений | 75% (первый прогон); 65% (после настройки Qwen3-4B) |
 | Macro F1 по категориям | 1.0000 |
@@ -91,9 +96,9 @@ python -m evaluation.evaluate_replies
 - Поиск RAG основан на ключевых словах, без embeddings и векторной БД; ответы LLM могут содержать неточности.
 - Фильтры безопасности и качество казахских ответов ограничены; **проверка оператором обязательна**.
 - Нет полноценной системы аккаунтов и ролей; доставка сообщений не гарантирует exactly-once.
-- Для локального запуска нужны активные внешние сервисы; настройка БД пока частично ручная.
+- Для полной работы интеграций нужны активные внешние сервисы; инициализация БД выполняется SQL-скриптами.
 
-**Далее:** воспроизводимая инициализация PostgreSQL → GitHub Actions CI → надёжность доставки и логирование → релиз v1.0.0.
+**Далее:** GitHub Actions CI → надёжность доставки и логирование → улучшение базы знаний и AI Evaluation → релиз v1.0.0.
 
 ---
 
@@ -117,9 +122,9 @@ A Telegram message is received by FastAPI, classified by Qwen3-4B (with a Python
 - LLM classification, priority safeguards, missing-information detection, Python-rule fallback.
 - Russian, English, and Kazakh draft replies, language validation, localized fallbacks.
 - **Keyword-based RAG:** retrieve relevant JSON knowledge articles and pass them to Qwen3.
-- PostgreSQL persistence, n8n operator notifications, Telegram inline review buttons, protected REST API.
+- PostgreSQL persistence, including classification metadata (`knowledge_article_ids`, `missing_information`) exposed via REST API; n8n operator notifications and Telegram inline review buttons.
 - Reply delivery tracking and basic safeguards against sensitive-credential requests.
-- **166 passing tests** in the latest reported local run.
+- **166 passing tests** in the latest local run.
 
 ### Stack
 
@@ -145,7 +150,7 @@ Customer → Telegram → FastAPI → LLM classification / Python fallback
 
 ### Local setup
 
-1. Install Python, PostgreSQL, n8n, and a local LLM API server (e.g., LM Studio). Expose the Telegram webhook through HTTPS (e.g., ngrok).
+1. Install Python, PostgreSQL, n8n, and a local LLM API server (e.g., Bionic or LM Studio). Expose the Telegram webhook through HTTPS (e.g., ngrok).
 2. Create an environment and install dependencies:
 
    ```bash
@@ -154,7 +159,12 @@ Customer → Telegram → FastAPI → LLM classification / Python fallback
    python -m pip install -r requirements.txt
    ```
 
-3. Create the PostgreSQL database and base tables, then apply [`sql/001_human_in_the_loop.sql`](sql/001_human_in_the_loop.sql). **This is an upgrade script, not a complete fresh-install migration.**
+3. Create an empty PostgreSQL database named `ai_support_assistant` and run the SQL scripts in order:
+   - [`000_initial_schema.sql`](sql/000_initial_schema.sql) — create tables, constraints, and indexes.
+   - [`001_human_in_the_loop.sql`](sql/001_human_in_the_loop.sql) — maintain compatibility with the human review workflow.
+   - [`002_classification_metadata.sql`](sql/002_classification_metadata.sql) — add classification metadata.
+
+   For an existing database with migration `001` already applied, run `002` only. Older tickets receive empty lists (historical metadata is not backfilled).
 4. Configure `.env` from `.env.example` with database, Telegram, operator, and LLM settings. Do not commit secrets. The current configuration uses `qwen3-4b` for classification and reply generation.
 5. Start FastAPI:
 
@@ -176,7 +186,7 @@ python -m evaluation.evaluate_replies
 
 | Metric | Result |
 | --- | ---: |
-| Automated tests | 166 passed (latest reported local run) |
+| Automated tests | 166 passed (latest local run) |
 | Category accuracy (20 cases) | 100% in both runs |
 | Priority accuracy (20 cases) | 75% baseline; 65% after Qwen3-4B configuration |
 | Category macro F1 | 1.0000 |
@@ -189,9 +199,9 @@ These are **small portfolio evaluations**, not production benchmarks. Classifica
 - RAG uses keyword matching rather than semantic/vector search; LLM responses may be inaccurate.
 - Safety checks are limited, Kazakh output quality needs improvement, and **human approval is mandatory**.
 - Single-operator authentication; no full role/account management or exactly-once message delivery guarantee.
-- Local services must stay running; database bootstrap is still partly manual.
+- Full integration functionality requires running external services; database initialization uses SQL scripts.
 
-**Next:** reproducible PostgreSQL initialization → GitHub Actions CI → delivery reliability and logging → v1.0.0 release.
+**Next:** GitHub Actions CI → delivery reliability and logging → knowledge base and AI evaluation improvements → v1.0.0 release.
 
 ---
 

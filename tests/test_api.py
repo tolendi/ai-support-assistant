@@ -118,6 +118,9 @@ def test_classify_ticket_saves_ticket(monkeypatch):
     assert saved_ticket.message_text == "I was charged twice for my order"
     assert saved_ticket.category == "payment_issue"
     assert saved_ticket.priority == "high"
+    assert saved_ticket.knowledge_article_ids == [1]
+    assert "payment_date" in saved_ticket.missing_information
+    assert "payment_amount" in saved_ticket.missing_information
 
 
 
@@ -151,6 +154,11 @@ def test_get_ticket_by_id(monkeypatch):
         priority="high",
         confidence=0.7,
         reason="Keyword-based classification",
+        knowledge_article_ids=[1],
+        missing_information=[
+        "payment_date",
+        "payment_amount"
+        ],
         draft_reply="We will review your request.",
         requires_human_review=True,
         status="new",
@@ -172,6 +180,12 @@ def test_get_ticket_by_id(monkeypatch):
     assert data["category"] == "payment_issue"
     assert data["priority"] == "high"
     assert data["status"] == "new"
+
+    assert data["knowledge_article_ids"] == [1]
+    assert data["missing_information"] == [
+    "payment_date",
+    "payment_amount"
+    ]
 
 
 def test_get_ticket_not_found(monkeypatch):
@@ -204,6 +218,8 @@ def test_get_tickets(monkeypatch):
             priority="high",
             confidence=0.7,
             reason="Keyword-based classification",
+            knowledge_article_ids=[],
+            missing_information=[],
             draft_reply="We will review your request.",
             requires_human_review=True,
             status="new",
@@ -272,6 +288,8 @@ def test_get_tickets_with_filters(monkeypatch):
                 priority="high",
                 confidence=0.7,
                 reason="Keyword-based classification",
+                knowledge_article_ids=[],
+                missing_information=[],
                 draft_reply="We will review your request.",
                 requires_human_review=True,
                 status="new",
@@ -348,6 +366,8 @@ def test_update_ticket_status(monkeypatch):
             priority="high",
             confidence=0.7,
             reason="Keyword-based classification",
+            knowledge_article_ids=[],
+            missing_information=[],
             draft_reply="We will review your request.",
             requires_human_review=True,
             status=status,
@@ -481,6 +501,8 @@ def test_update_ticket_status_accepts_valid_transition(monkeypatch):
             priority="high",
             confidence=0.7,
             reason="Keyword-based classification",
+            knowledge_article_ids=[],
+            missing_information=[],
             draft_reply="We will review your request.",
             requires_human_review=True,
             status=status,
@@ -604,11 +626,16 @@ def test_telegram_webhook_reply_sent(monkeypatch):
         id = 123
 
     statuses = []
+    saved_tickets = []
+
+    def fake_save_ticket(ticket):
+        saved_tickets.append(ticket)
+        return MockTicket()
 
     monkeypatch.setattr(
-        main, "save_ticket", lambda ticket: MockTicket()
+        main, "save_ticket", fake_save_ticket
     )
-
+    
     monkeypatch.setattr(
         main,
         "send_telegram_message",
@@ -641,6 +668,13 @@ def test_telegram_webhook_reply_sent(monkeypatch):
 
     assert response.status_code == 200
     assert statuses == [(123, "sent")]
+    assert len(saved_tickets) == 1
+
+    saved_ticket = saved_tickets[0]
+
+    assert saved_ticket.knowledge_article_ids == [1]
+    assert "payment_date" in saved_ticket.missing_information
+    assert "payment_amount" in saved_ticket.missing_information
 
 def test_telegram_webhook_reply_failed(monkeypatch):
     class MockTicket:

@@ -84,6 +84,8 @@ def classify_support_ticket(ticket: TicketCreate):
         priority=result.priority.value,
         confidence=result.confidence,
         reason=result.reason,
+        knowledge_article_ids=result.knowledge_article_ids,
+        missing_information=result.missing_information,
         draft_reply=result.draft_reply,
         requires_human_review=result.requires_human_review,
     )
@@ -301,6 +303,8 @@ def telegram_webhook(
         priority=classification.priority.value,
         confidence=classification.confidence,
         reason=classification.reason,
+        knowledge_article_ids=classification.knowledge_article_ids,
+        missing_information=classification.missing_information,
         draft_reply=classification.draft_reply,
         requires_human_review=classification.requires_human_review,
     )

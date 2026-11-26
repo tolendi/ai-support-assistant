@@ -14,6 +14,8 @@ class TicketResponse(BaseModel):
     priority: str
     confidence: float
     reason: str
+    knowledge_article_ids: list[int]
+    missing_information: list[str]
     draft_reply: str
     requires_human_review: bool
     status: str

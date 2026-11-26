@@ -1,4 +1,3 @@
-
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -10,7 +9,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Base(DeclarativeBase):
     pass
@@ -30,6 +29,8 @@ class Ticket(Base):
     priority: Mapped[str] = mapped_column(String(20), nullable=False)
     confidence: Mapped[float] = mapped_column(Numeric(3, 2), nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
+    knowledge_article_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    missing_information: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
     draft_reply: Mapped[str] = mapped_column(Text, nullable=False)
     reply_status: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'pending'"))
     requires_human_review: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
