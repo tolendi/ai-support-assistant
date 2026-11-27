@@ -1,5 +1,7 @@
 # AI Support Assistant
 
+[![Tests](https://github.com/tolendi/ai-support-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/tolendi/ai-support-assistant/actions/workflows/tests.yml)
+
 **RU** · [English](#english)
 
 🎬 [Демо на YouTube](https://youtu.be/jMNf9-BI0OI) — показана более ранняя версия MVP.
@@ -98,7 +100,7 @@ python -m evaluation.evaluate_replies
 - Нет полноценной системы аккаунтов и ролей; доставка сообщений не гарантирует exactly-once.
 - Для полной работы интеграций нужны активные внешние сервисы; инициализация БД выполняется SQL-скриптами.
 
-**Далее:** GitHub Actions CI → надёжность доставки и логирование → улучшение базы знаний и AI Evaluation → релиз v1.0.0.
+**Далее:** Надёжность доставки и логирование → улучшение базы знаний и AI Evaluation → релиз v1.0.0.
 
 ---
 
@@ -201,7 +203,7 @@ These are **small portfolio evaluations**, not production benchmarks. Classifica
 - Single-operator authentication; no full role/account management or exactly-once message delivery guarantee.
 - Full integration functionality requires running external services; database initialization uses SQL scripts.
 
-**Next:** GitHub Actions CI → delivery reliability and logging → knowledge base and AI evaluation improvements → v1.0.0 release.
+**Next:** Delivery reliability and logging → knowledge base and AI evaluation improvements → v1.0.0 release.
 
 ---
 
