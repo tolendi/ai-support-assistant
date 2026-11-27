@@ -8,8 +8,22 @@ from sqlalchemy.exc import IntegrityError
 from app.main import app
 from app import main
 
-
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def mock_llm(monkeypatch):
+    def fake_llm_unavailable(*args, **kwargs):
+        raise httpx.ConnectError("LLM unavailable during tests")
+
+    monkeypatch.setattr(
+        "app.services.classifier.classify_with_llm",
+        fake_llm_unavailable,
+    )
+
+    monkeypatch.setattr(
+        "app.services.reply_generator.generate_llm_reply",
+        fake_llm_unavailable,
+    )
 
 @pytest.fixture(autouse=True)
 def operator_auth_headers(request):
@@ -43,6 +57,11 @@ def test_classify_ticket_endpoint(monkeypatch):
         main,
         "classify_ticket",
         classify_ticket_by_rules,
+    )
+    monkeypatch.setattr(
+        main,
+        "save_ticket",
+        lambda ticket: ticket,
     )
     response = client.post(
         "/tickets/classify",
